@@ -1,0 +1,19 @@
+{
+  "name": "timbanghub-usr-n540",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "modbus-serial": "^8.0.25",
+    "mysql2": "^3.24.3",
+    "sequelize": "^6.37.8",
+    "uuid": "^14.0.2"
+  }
+}
