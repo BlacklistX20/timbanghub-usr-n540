@@ -11,6 +11,8 @@ const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 1000);
 const MODBUS_TIMEOUT_MS = Number(process.env.MODBUS_TIMEOUT_MS || 1000);
 const SYNC_INTERVAL_MS = Number(process.env.SYNC_INTERVAL_MS || 5000);
 const SYNC_BATCH_SIZE = Number(process.env.SYNC_BATCH_SIZE || 100);
+const WEIGHT_MIN_KG = Number(process.env.WEIGHT_MIN_KG ?? -Infinity);
+const WEIGHT_MAX_KG = Number(process.env.WEIGHT_MAX_KG ?? Infinity);
 
 async function main() {
   const scales = loadScalesConfig();
@@ -36,6 +38,8 @@ async function main() {
       pollIntervalMs: POLL_INTERVAL_MS,
       modbusTimeoutMs: MODBUS_TIMEOUT_MS,
       generateSyncId: uuidv4,
+      minWeightKg: WEIGHT_MIN_KG,
+      maxWeightKg: WEIGHT_MAX_KG,
     })
   );
 

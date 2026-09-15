@@ -41,7 +41,7 @@ const mockModels = {
 async function main() {
   // register 0 = raw value (weight * 100), diubah di tengah test untuk
   // simulasi perubahan berat.
-  let simulatedRawValue = 15075; // -> 150.75 kg
+  let simulatedRawValue = 4500; // -> 45.00 kg (dalam rentang valid 40-55)
 
   const vector = {
     getInputRegister: function () {
@@ -68,21 +68,28 @@ async function main() {
     pollIntervalMs: 200, // dipercepat khusus untuk test
     modbusTimeoutMs: 500,
     generateSyncId: uuidv4,
+    minWeightKg: 40,
+    maxWeightKg: 55,
   });
 
-  console.log('--- FASE 1: baca normal (harus muncul weight 150.75) ---');
+  console.log('--- FASE 1: baca normal, dalam rentang valid (harus muncul weight 45) ---');
   worker.start();
   await wait(1100);
 
-  console.log('\n--- FASE 2: nilai berat berubah (harus muncul weight 200) ---');
-  simulatedRawValue = 20000; // -> 200.00 kg
-  await wait(400);
+  console.log('\n--- FASE 2: berat DI LUAR rentang 40-55 (weight 100) ---');
+  console.log('    (ScaleReading.create SENGAJA TIDAK boleh muncul lagi, tapi ScaleStatus.update tetap connected)');
+  simulatedRawValue = 10000; // -> 100.00 kg, di luar rentang valid
+  await wait(600);
 
-  console.log('\n--- FASE 3: simulasi koneksi terputus (server dimatikan, harus muncul status error) ---');
+  console.log('\n--- FASE 3: berat balik ke dalam rentang (weight 50) ---');
+  simulatedRawValue = 5000; // -> 50.00 kg
+  await wait(600);
+
+  console.log('\n--- FASE 4: simulasi koneksi terputus (server dimatikan, harus muncul status error) ---');
   await new Promise((resolve) => server.close(resolve));
   await wait(1000);
 
-  console.log('\n--- FASE 4: server hidup lagi (harus auto-reconnect, status balik connected) ---');
+  console.log('\n--- FASE 5: server hidup lagi (harus auto-reconnect, status balik connected) ---');
   server = new ModbusRTU.ServerTCP(vector, { host: '127.0.0.1', port: 8501, unitID: 1 });
   await wait(700);
 

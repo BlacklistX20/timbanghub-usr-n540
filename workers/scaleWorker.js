@@ -25,6 +25,13 @@ const DEFAULT_MODBUS_TIMEOUT_MS = 1000;
  * @param {number} [params.modbusTimeoutMs] - timeout baca Modbus, default 1000ms.
  *                                  Sebaiknya lebih kecil dari pollIntervalMs supaya
  *                                  tidak menumpuk antar tick.
+ * @param {number} [params.minWeightKg] - batas bawah berat valid (kg). Pembacaan
+ *                                  di bawah ini TIDAK disimpan ke scale_readings,
+ *                                  tapi status tetap 'connected' (bukan error koneksi).
+ *                                  Default -Infinity (tidak ada batas bawah).
+ * @param {number} [params.maxWeightKg] - batas atas berat valid (kg), sama
+ *                                  perlakuannya dengan minWeightKg.
+ *                                  Default Infinity (tidak ada batas atas).
  */
 function createScaleWorker({
   scaleConfig,
@@ -32,6 +39,8 @@ function createScaleWorker({
   pollIntervalMs,
   generateSyncId,
   modbusTimeoutMs = DEFAULT_MODBUS_TIMEOUT_MS,
+  minWeightKg = -Infinity,
+  maxWeightKg = Infinity,
 }) {
   const { ScaleReading, ScaleStatus, ScaleStatusLog } = models;
   const client = new ModbusRTU();
@@ -120,12 +129,20 @@ function createScaleWorker({
       const rawValue = combineRegisters(result.data);
       const weight = rawValue / 100;
 
-      await ScaleReading.create({
-        sync_id: generateSyncId(),
-        scale_id: scaleConfig.dbId,
-        weight,
-        recorded_at: new Date(),
-      });
+      const withinValidRange = weight >= minWeightKg && weight <= maxWeightKg;
+
+      if (withinValidRange) {
+        await ScaleReading.create({
+          sync_id: generateSyncId(),
+          scale_id: scaleConfig.dbId,
+          weight,
+          recorded_at: new Date(),
+        });
+      }
+      // Di luar rentang minWeightKg..maxWeightKg -> sengaja TIDAK disimpan
+      // ke scale_readings (dianggap anomali/noise), dan sengaja TIDAK
+      // di-log ke console (sesuai keputusan). Koneksi ke alat sendiri
+      // berhasil, jadi status tetap dilaporkan 'connected' di bawah ini.
 
       await reportStatus('connected', null);
     } catch (err) {
