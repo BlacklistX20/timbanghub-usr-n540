@@ -1,5 +1,8 @@
 'use strict';
 
+// Import fungsi waktu sesuai zona lokal
+const { getCurrentTime } = require('../utils/timeHelper');
+
 const DEFAULT_BATCH_SIZE = 100;
 
 /**
@@ -60,7 +63,9 @@ function createSyncWorker({
     await onlineModel.bulkCreate(rows, { ignoreDuplicates: true });
 
     const ids = pending.map((row) => row.id);
-    await localModel.update({ synced_at: new Date() }, { where: { id: ids } });
+    
+    // Gunakan fungsi getCurrentTime() untuk menandai waktu sinkronisasi
+    await localModel.update({ synced_at: getCurrentTime() }, { where: { id: ids } });
 
     console.log(`[SyncWorker] ${label}: ${pending.length} baris disinkron.`);
     return pending.length;
@@ -107,6 +112,7 @@ function createSyncWorker({
     let pushed = 0;
 
     for (const row of localRows) {
+      // Pembacaan/komparasi tetap menggunakan new Date() karena hanya membaca dari DB, bukan mencetak waktu baru
       const needsSync = !row.synced_at || new Date(row.updated_at) > new Date(row.synced_at);
       if (!needsSync) continue;
 
@@ -119,8 +125,9 @@ function createSyncWorker({
         { where: { scale_id: row.scale_id } }
       );
 
+      // Gunakan fungsi getCurrentTime() untuk menandai waktu sinkronisasi
       await localModels.ScaleStatus.update(
-        { synced_at: new Date() },
+        { synced_at: getCurrentTime() },
         { where: { scale_id: row.scale_id } }
       );
 

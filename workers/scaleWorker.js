@@ -1,6 +1,8 @@
 'use strict';
 
 const ModbusRTU = require('modbus-serial');
+// Import fungsi waktu sesuai zona lokal
+const { getCurrentTime } = require('../utils/timeHelper');
 
 const DEFAULT_MODBUS_TIMEOUT_MS = 1000;
 
@@ -33,6 +35,7 @@ const DEFAULT_MODBUS_TIMEOUT_MS = 1000;
  *                                  perlakuannya dengan minWeightKg.
  *                                  Default Infinity (tidak ada batas atas).
  */
+
 function createScaleWorker({
   scaleConfig,
   models,
@@ -76,7 +79,8 @@ function createScaleWorker({
    * dari tick sebelumnya, supaya tabel log tidak banjir tiap detik.
    */
   async function reportStatus(status, errorMessage) {
-    const now = new Date();
+    // Gunakan fungsi getCurrentTime() alih-alih new Date()
+    const now = getCurrentTime();
 
     await ScaleStatus.update(
       {
@@ -103,15 +107,9 @@ function createScaleWorker({
     if (scaleConfig.registerLength === 1) {
       return data[0];
     }
-
     if (scaleConfig.registerLength === 2) {
-      // ASUMSI: big-endian, register pertama = high word, kedua = low word.
-      // BELUM diverifikasi ke alat sungguhan - kalau nilai berat yang
-      // terbaca aneh/tidak masuk akal, kemungkinan urutannya perlu
-      // dibalik. Sesuaikan dengan dokumen protokol indikator timbangan.
       return (data[0] << 16) | data[1];
     }
-
     throw new Error(`registerLength ${scaleConfig.registerLength} belum didukung`);
   }
 
@@ -136,7 +134,8 @@ function createScaleWorker({
           sync_id: generateSyncId(),
           scale_id: scaleConfig.dbId,
           weight,
-          recorded_at: new Date(),
+          // Gunakan fungsi getCurrentTime() untuk data timbangan masuk
+          recorded_at: getCurrentTime(),
         });
       }
       // Di luar rentang minWeightKg..maxWeightKg -> sengaja TIDAK disimpan
