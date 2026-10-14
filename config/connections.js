@@ -26,6 +26,7 @@ function createSequelizeInstance({ host, port, database, username, password, ret
     host,
     port: Number(port),
     dialect: 'mysql',
+    timezone: '+08:00',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
       max: 10,
